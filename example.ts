@@ -74,24 +74,27 @@ interface DerivedResult {
   bLast: string | null;
 }
 
-const approach2_separateProcessors: Task<DerivedResult> = Concurrent.allStreams({
-  a: {
-    stream: streamA,
-    process: Stream.runFold(
-      Stream.tap(streamA, processA),
-      0,
-      (count, _) => count + 1
-    ),
-  },
-  b: {
-    stream: streamB,
-    process: Stream.runFold(
-      Stream.tap(streamB, processB),
-      null as string | null,
-      (_, value) => value
-    ),
-  },
-}).then(({ a, b }) => ({ aCount: a, bLast: b }));
+const approach2_separateProcessors: Task<DerivedResult> = Task.map(
+  Concurrent.allStreams({
+    a: {
+      stream: streamA,
+      process: Stream.runFold(
+        Stream.tap(streamA, processA),
+        0,
+        (count, _) => count + 1
+      ),
+    },
+    b: {
+      stream: streamB,
+      process: Stream.runFold(
+        Stream.tap(streamB, processB),
+        null as string | null,
+        (_, value) => value
+      ),
+    },
+  }),
+  ({ a, b }) => ({ aCount: a, bLast: b })
+);
 
 // ============================================================================
 // APPROACH 3: Manual composition (most control, closest to original)
