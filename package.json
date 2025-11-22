@@ -1,0 +1,22 @@
+{
+  "name": "concurrency-lib",
+  "version": "1.0.0",
+  "description": "Lightweight, Effect.ts-inspired concurrency library for TypeScript",
+  "type": "module",
+  "main": "concurrency.ts",
+  "scripts": {
+    "demo:original": "node original.js",
+    "demo:new": "bun example.ts",
+    "test": "bun test"
+  },
+  "keywords": [
+    "concurrency",
+    "async",
+    "abort",
+    "effect",
+    "streams",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}
