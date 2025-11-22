@@ -1,0 +1,39 @@
+{
+  "name": "effect-lite",
+  "version": "0.1.0",
+  "description": "Lightweight, elegant concurrency API for TypeScript inspired by Effect.ts",
+  "main": "effect-lite.js",
+  "types": "effect-lite.d.ts",
+  "type": "module",
+  "scripts": {
+    "demo": "node demo.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "effect",
+    "concurrency",
+    "async",
+    "abort",
+    "promise",
+    "fiber",
+    "scope",
+    "resource-management",
+    "cancellation",
+    "structured-concurrency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "effect-lite.ts",
+    "effect-lite.js",
+    "effect-lite.d.ts",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
