@@ -1,0 +1,63 @@
+{
+  "name": "@wish/core",
+  "version": "0.1.0",
+  "description": "A lightweight concurrency library inspired by Effect.ts - the async library we wish we had",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./Wish": {
+      "import": "./dist/Wish.js",
+      "types": "./dist/Wish.d.ts"
+    },
+    "./Stream": {
+      "import": "./dist/Stream.js",
+      "types": "./dist/Stream.d.ts"
+    },
+    "./Scope": {
+      "import": "./dist/Scope.js",
+      "types": "./dist/Scope.d.ts"
+    },
+    "./Fiber": {
+      "import": "./dist/Fiber.js",
+      "types": "./dist/Fiber.d.ts"
+    },
+    "./Signal": {
+      "import": "./dist/Signal.js",
+      "types": "./dist/Signal.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "example:basic": "tsx examples/basic.ts",
+    "example:streams": "tsx examples/streams.ts",
+    "example:fibers": "tsx examples/fibers.ts"
+  },
+  "keywords": [
+    "async",
+    "concurrency",
+    "promise",
+    "effect",
+    "stream",
+    "fiber",
+    "abort-signal",
+    "functional"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
