@@ -64,36 +64,47 @@ When performing research:
 ## Tool Usage Guidelines
 
 ### When to Use Subagents
-Delegate to specialized subagents for:
+Delegate to specialized subagents using the Task tool for comprehensive work:
+
+**security-auditor (Task tool):**
+- Complete security audits with OWASP Top 10 coverage
+- Authentication and authorization analysis
+- Input validation and cryptographic review
+- Vulnerability assessment with severity ratings
+- Security remediation recommendations
+- Use when: "Do a security audit", "Check for vulnerabilities", "Review auth security"
+
+**architecture-researcher (Task tool):**
+- System architecture documentation
+- Component and dependency mapping
+- Data flow and communication pattern analysis
+- API endpoint documentation
+- Design pattern identification
+- Use when: "Document the architecture", "How is the system structured?", "Map components"
+
+**deep-researcher (Task tool):**
+- Multi-phase comprehensive research
+- Pattern and anti-pattern identification
+- Cross-codebase investigation
+- Implementation tracing
+- Thorough analysis with detailed reports
+- Use when: "Research how X works", "Find all instances of Y", "Investigate Z comprehensively"
 
 **Explore Agent (Task tool with subagent_type=Explore):**
-- Codebase structure understanding
-- Finding all implementations of a pattern
-- Tracing data flows across files
-- Architecture analysis
-- Any "where" or "how is X implemented" questions
-- Thoroughness levels:
-  - "quick": Basic searches (1-2 locations)
-  - "medium": Moderate exploration (3-5 locations)
-  - "very thorough": Comprehensive analysis (exhaustive search)
+- Quick codebase exploration
+- Finding specific patterns or implementations
+- Targeted searches with adjustable thoroughness
+- Thoroughness levels: "quick", "medium", "very thorough"
+- Use when: Fast targeted searches, not comprehensive research
 
-**Plan Subagent:**
-- Automatically used in Plan Mode
-- Multi-file implementation planning
-- Architecture design before coding
-
-**Code Reviewer:**
-- After significant code changes
-- Security vulnerability assessment
-- Code quality review
-
-### Plan Mode Usage
-Activate Plan Mode (Shift+Tab or --permission-mode plan) for:
-- Initial codebase exploration
-- Security audits and code reviews
-- Architecture documentation
-- Complex change planning
-- Any read-only research phase
+### Subagent Invocation
+Use the Task tool to delegate to subagents:
+```
+Task tool with:
+- subagent_type: "security-auditor" | "architecture-researcher" | "deep-researcher" | "Explore"
+- prompt: Detailed description of what to research/analyze
+- model: "haiku" for simple tasks, "sonnet" for complex analysis (optional)
+```
 
 ### Direct Tool Usage
 Use direct tools (Read, Grep, Glob) only for:
@@ -102,7 +113,7 @@ Use direct tools (Read, Grep, Glob) only for:
 - Finding specific classes or functions
 - Simple, targeted operations
 
-**Never use direct tools for exploratory research** - use the Explore subagent instead.
+**Never use direct tools for exploratory research** - delegate to appropriate subagents instead.
 
 ---
 
@@ -126,10 +137,10 @@ Ask for clarification only when:
 
 ### Exploration Strategy
 Before asking questions:
-1. Use Explore subagent to research the codebase
+1. Delegate to appropriate subagent (deep-researcher, architecture-researcher, or Explore)
 2. Check existing patterns and conventions
 3. Review related implementations
-4. Look for documentation or comments
+4. Look for documentation and comments
 5. Examine test files for expected behavior
 
 ---
@@ -137,7 +148,7 @@ Before asking questions:
 ## Task-Specific Guidelines
 
 ### Security Audits
-When performing security audits:
+Delegate comprehensive security audits to the security-auditor subagent, which will:
 - Check for all OWASP Top 10 vulnerabilities
 - Analyze authentication and authorization flows
 - Review input validation and sanitization
@@ -151,7 +162,7 @@ When performing security audits:
 - Prioritize remediation recommendations
 
 ### Architecture Documentation
-When documenting architecture:
+Delegate architecture research to the architecture-researcher subagent, which will:
 - Identify all major components and services
 - Map dependencies and data flows
 - Document communication patterns (REST, GraphQL, events, etc.)
@@ -165,7 +176,7 @@ When documenting architecture:
 
 ### Code Implementation
 When implementing features:
-- Research existing patterns first using Explore subagent
+- Research existing patterns first using deep-researcher or Explore subagent
 - Follow established codebase conventions
 - Implement comprehensive error handling
 - Add input validation and sanitization
@@ -179,7 +190,7 @@ When implementing features:
 ### Bug Investigation
 When investigating bugs:
 - Reproduce the issue if possible
-- Use Explore subagent to find all related code
+- Use deep-researcher subagent to find all related code and trace root cause
 - Trace data flow from input to error
 - Check for similar issues elsewhere
 - Identify root cause, not just symptoms
@@ -192,26 +203,25 @@ When investigating bugs:
 ## Multi-Phase Work Strategy
 
 ### For Long-Running Tasks
-Break work into logical phases:
+Break work into logical phases using specialized subagents:
 
 **Phase 1: Research and Planning**
-- Activate Plan Mode
-- Use Explore subagent comprehensively
-- Gather all necessary context
-- Identify scope and boundaries
-- Note dependencies and risks
+- Delegate to appropriate subagent (deep-researcher, architecture-researcher, security-auditor)
+- Let subagent gather comprehensive context systematically
+- Subagent will identify scope, boundaries, dependencies, and risks
+- Review subagent findings before proceeding
 
 **Phase 2: Analysis and Design**
-- Analyze gathered information
-- Identify patterns and anti-patterns
-- Design solution or document findings
-- Plan implementation approach
+- Analyze information gathered by subagent
+- Identify patterns and anti-patterns from research
+- Design solution or synthesize findings into reports
+- Plan implementation approach based on discovered patterns
 
 **Phase 3: Execution**
-- Implement changes or generate reports
-- Follow quality standards
+- Implement changes or generate final reports
+- Follow quality standards from research phase
 - Test and verify work
-- Document results
+- Document results with code references
 
 **Phase 4: Validation**
 - Review against completion criteria
@@ -219,12 +229,13 @@ Break work into logical phases:
 - Verify quality standards met
 - Finalize deliverables
 
-### Session Management
-For very long tasks:
-- Work can be resumed across sessions
-- Document progress in commit messages
-- Keep the todo list updated
-- Leave clear continuation points
+### Subagent Delegation for Complex Tasks
+For comprehensive research or analysis:
+- Use Task tool to invoke specialized subagent
+- Provide detailed prompt describing what to research/analyze
+- Let subagent work autonomously through its phases
+- Review subagent's complete findings
+- Use findings to inform next steps
 
 ---
 
@@ -257,45 +268,45 @@ For very long tasks:
 
 ### Task: "Do a security audit"
 **Interpret as:**
-- Comprehensive OWASP Top 10 vulnerability assessment
-- All authentication and authorization flow analysis
-- Input validation and sanitization review
-- Cryptographic implementation review
-- Session management assessment
-- Security misconfiguration check
-- Detailed report with severity ratings and remediation steps
+- Delegate to security-auditor subagent for comprehensive analysis
+- Subagent will perform OWASP Top 10 vulnerability assessment
+- Full authentication and authorization flow analysis
+- Input validation, cryptographic review, session management
+- Generate detailed report with severity ratings and remediation steps
 
 **Not as:**
 - "Which part?" or "What should I focus on?"
 
 ### Task: "Research the authentication system"
 **Interpret as:**
-- Find all authentication-related code using Explore subagent
-- Document authentication mechanisms (JWT, sessions, OAuth, etc.)
-- Identify all auth endpoints and flows
-- Review token handling and validation
-- Check password policies and storage
-- Document session management
-- Assess security posture
+- Delegate to deep-researcher subagent for comprehensive investigation
+- Find all authentication-related code across entire codebase
+- Document all authentication mechanisms (JWT, sessions, OAuth, etc.)
+- Identify all auth endpoints, flows, token handling, password policies
 - Provide comprehensive report with code references
 
 **Not as:**
 - Reading one auth file and asking what else to check
 
+### Task: "Document the architecture"
+**Interpret as:**
+- Delegate to architecture-researcher subagent
+- Map all components, dependencies, and data flows
+- Document communication patterns and API contracts
+- Generate comprehensive architecture documentation
+
+**Not as:**
+- Asking "Which parts of the architecture?"
+
 ### Task: "Implement user registration"
 **Interpret as:**
-- Research existing user patterns using Explore subagent
-- Implement registration endpoint following codebase conventions
-- Add input validation (email, password strength, etc.)
-- Hash passwords securely
-- Send verification email if that's the pattern
-- Add rate limiting to prevent abuse
-- Implement proper error handling
-- Add unit and integration tests
+- First delegate to deep-researcher to find existing user patterns
+- Implement registration following discovered conventions
+- Add comprehensive validation, security measures, tests
 - Update API documentation
 
 **Not as:**
-- Creating minimal registration code without validation or following existing patterns
+- Creating minimal registration code without research
 
 ---
 
@@ -325,16 +336,18 @@ For very long tasks:
 ## Cost and Performance Optimization
 
 ### Efficient Research
-- Use Plan Mode for read-only exploration (cheaper)
-- Start with "quick" thoroughness, escalate if needed
+- Delegate comprehensive research to specialized subagents
+- Subagents use plan permission mode automatically (read-only, cost-effective)
+- Start with Explore subagent for quick searches, escalate to deep-researcher if needed
 - Cache findings in conversation context
 - Avoid redundant searches
 
 ### Smart Tool Selection
-- Explore subagent for open-ended research
-- Direct tools for targeted operations
-- Appropriate model selection (haiku for simple tasks)
-- Batch related operations together
+- Use specialized subagents for comprehensive research and analysis
+- Use Explore subagent for quick targeted searches
+- Use direct tools only for simple, known operations
+- Appropriate model selection (haiku for simple subagent tasks)
+- Batch related operations in single subagent invocation
 
 ---
 
