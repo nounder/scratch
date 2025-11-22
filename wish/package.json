@@ -1,0 +1,62 @@
+{
+  "name": "wish-concurrency",
+  "version": "0.1.0",
+  "description": "The async library we wish we had - lightweight, elegant concurrency with structured cancellation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./stream": {
+      "import": "./dist/stream.js",
+      "types": "./dist/stream.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "example:basic": "tsx examples/basic.ts",
+    "example:refactored": "tsx examples/refactored.ts",
+    "example:quick-start": "tsx examples/quick-start.ts",
+    "example:advanced": "tsx examples/advanced.ts"
+  },
+  "keywords": [
+    "async",
+    "concurrency",
+    "structured-concurrency",
+    "cancellation",
+    "abort",
+    "promise",
+    "effect",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/wish-concurrency.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/wish-concurrency/issues"
+  },
+  "homepage": "https://github.com/yourusername/wish-concurrency#readme"
+}
