@@ -8,8 +8,8 @@ console.log('🧵 Fiber Demo - Promise-like API\n');
 
 // Example 1: Using .then() on Fiber
 console.log('1️⃣  Using .then() on Fiber:');
-const fiber1 = Wish.fork(async (signal) => {
-  await Wish.sleep(50)(signal);
+const fiber1 = Wish.fork(async (ctx) => {
+  await Wish.sleep(50)(ctx);
   return 'Hello from Fiber!';
 });
 
@@ -21,8 +21,8 @@ await Wish.sleep(100);
 
 // Example 2: Using .catch() on Fiber
 console.log('2️⃣  Using .catch() on Fiber:');
-const fiber2 = Wish.fork(async (signal) => {
-  await Wish.sleep(50)(signal);
+const fiber2 = Wish.fork(async (ctx) => {
+  await Wish.sleep(50)(ctx);
   throw new Error('Oops!');
 });
 
@@ -34,8 +34,8 @@ await Wish.sleep(100);
 
 // Example 3: Using .finally() on Fiber
 console.log('3️⃣  Using .finally() on Fiber:');
-const fiber3 = Wish.fork(async (signal) => {
-  await Wish.sleep(50)(signal);
+const fiber3 = Wish.fork(async (ctx) => {
+  await Wish.sleep(50)(ctx);
   return 'Done!';
 });
 
@@ -47,8 +47,8 @@ await Wish.sleep(100);
 
 // Example 4: Chaining like a Promise
 console.log('4️⃣  Chaining Fiber like a Promise:');
-const fiber4 = Wish.fork(async (signal) => {
-  await Wish.sleep(50)(signal);
+const fiber4 = Wish.fork(async (ctx) => {
+  await Wish.sleep(50)(ctx);
   return 42;
 });
 
@@ -62,8 +62,8 @@ await Wish.sleep(100);
 
 // Example 5: Using await directly on Fiber
 console.log('5️⃣  Using await directly on Fiber:');
-const fiber5 = Wish.fork(async (signal) => {
-  await Wish.sleep(50)(signal);
+const fiber5 = Wish.fork(async (ctx) => {
+  await Wish.sleep(50)(ctx);
   return 'Direct await!';
 });
 
@@ -72,8 +72,8 @@ console.log(`   Result: ${result5} ✓\n`);
 
 // Example 6: Interrupting a Fiber
 console.log('6️⃣  Interrupting a Fiber:');
-const fiber6 = Wish.fork(async (signal) => {
-  await Wish.sleep(1000)(signal);
+const fiber6 = Wish.fork(async (ctx) => {
+  await Wish.sleep(1000)(ctx);
   return 'This will not complete';
 });
 

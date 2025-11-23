@@ -26,7 +26,7 @@ export const fail = (error: Error): Wish<never> => {
 /**
  * Create a Wish from a function that returns a Promise.
  */
-export const fromPromise = <A>(fn: (signal: AbortSignal) => Promise<A>): Wish<A> => {
+export const fromPromise = <A>(fn: (ctx: { signal: AbortSignal }) => Promise<A>): Wish<A> => {
   return fn;
 };
 
@@ -41,20 +41,20 @@ export const fromPromiseK = <A>(promise: Promise<A>): Wish<A> => {
  * Sleep for a given number of milliseconds (cancellable).
  */
 export const sleep = (ms: number): Wish<void> => {
-  return (signal) =>
+  return (ctx) =>
     new Promise((resolve, reject) => {
-      if (signal.aborted) {
-        return reject(signal.reason ?? new AbortError());
+      if (ctx.signal.aborted) {
+        return reject(ctx.signal.reason ?? new AbortError());
       }
 
       const timeout = setTimeout(resolve, ms);
 
       const onAbort = () => {
         clearTimeout(timeout);
-        reject(signal.reason ?? new AbortError());
+        reject(ctx.signal.reason ?? new AbortError());
       };
 
-      signal.addEventListener('abort', onAbort, { once: true });
+      ctx.signal.addEventListener('abort', onAbort, { once: true });
     });
 };
 
@@ -62,8 +62,8 @@ export const sleep = (ms: number): Wish<void> => {
  * Transform the result of a Wish.
  */
 export const map = <A, B>(wish: Wish<A>, fn: (a: A) => B): Wish<B> => {
-  return async (signal) => {
-    const result = await wish(signal);
+  return async (ctx) => {
+    const result = await wish(ctx);
     return fn(result);
   };
 };
@@ -72,9 +72,9 @@ export const map = <A, B>(wish: Wish<A>, fn: (a: A) => B): Wish<B> => {
  * Chain Wishes together (flatMap/bind).
  */
 export const flatMap = <A, B>(wish: Wish<A>, fn: (a: A) => Wish<B>): Wish<B> => {
-  return async (signal) => {
-    const result = await wish(signal);
-    return fn(result)(signal);
+  return async (ctx) => {
+    const result = await wish(ctx);
+    return fn(result)(ctx);
   };
 };
 
@@ -85,8 +85,8 @@ export const flatMap = <A, B>(wish: Wish<A>, fn: (a: A) => Wish<B>): Wish<B> => 
 export const all = <T extends readonly Wish<any>[]>(
   ...wishes: T
 ): Wish<{ [K in keyof T]: T[K] extends Wish<infer A> ? A : never }> => {
-  return async (signal) => {
-    const results = await Promise.all(wishes.map((w) => w(signal)));
+  return async (ctx) => {
+    const results = await Promise.all(wishes.map((w) => w(ctx)));
     return results as any;
   };
 };
@@ -98,18 +98,18 @@ export const all = <T extends readonly Wish<any>[]>(
 export const race = <T extends readonly Wish<any>[]>(
   ...wishes: T
 ): Wish<T[number] extends Wish<infer A> ? A : never> => {
-  return async (signal) => {
+  return async (ctx) => {
     const controllers = wishes.map(() => new AbortController());
 
-    // Link parent signal
+    // Link parent ctx.signal
     const onAbort = () => {
-      controllers.forEach((c) => c.abort(signal.reason));
+      controllers.forEach((c) => c.abort(ctx.signal.reason));
     };
-    signal.addEventListener('abort', onAbort, { once: true });
+    ctx.signal.addEventListener('abort', onAbort, { once: true });
 
     try {
       const result = await Promise.race(
-        wishes.map((w, i) => w(controllers[i].signal))
+        wishes.map((w, i) => w({ signal: controllers[i].signal }))
       );
 
       // Cancel the losers
@@ -117,7 +117,7 @@ export const race = <T extends readonly Wish<any>[]>(
 
       return result;
     } finally {
-      signal.removeEventListener('abort', onAbort);
+      ctx.signal.removeEventListener('abort', onAbort);
     }
   };
 };
@@ -126,8 +126,8 @@ export const race = <T extends readonly Wish<any>[]>(
  * Run a Wish within a managed scope for structured concurrency.
  */
 export const scoped = <A>(fn: (scope: Scope) => Promise<A>): Wish<A> => {
-  return async (signal) => {
-    const scope = new Scope(signal);
+  return async (ctx) => {
+    const scope = new Scope(ctx.signal);
     try {
       return await fn(scope);
     } finally {
@@ -143,16 +143,16 @@ export const acquire = <A>(
   resource: Wish<A>,
   release: (a: A) => Promise<void>
 ): Wish<A> => {
-  return async (signal) => {
-    const acquired = await resource(signal);
+  return async (ctx) => {
+    const acquired = await resource(ctx);
     const cleanup = () => release(acquired);
 
-    if (signal.aborted) {
+    if (ctx.signal.aborted) {
       await cleanup();
-      throw signal.reason ?? new AbortError();
+      throw ctx.signal.reason ?? new AbortError();
     }
 
-    signal.addEventListener('abort', cleanup, { once: true });
+    ctx.signal.addEventListener('abort', cleanup, { once: true });
 
     return acquired;
   };
@@ -165,11 +165,11 @@ export const catchError = <A>(
   wish: Wish<A>,
   handler: (error: Error) => Wish<A>
 ): Wish<A> => {
-  return async (signal) => {
+  return async (ctx) => {
     try {
-      return await wish(signal);
+      return await wish(ctx);
     } catch (error) {
-      return handler(error as Error)(signal);
+      return handler(error as Error)(ctx);
     }
   };
 };
@@ -178,11 +178,11 @@ export const catchError = <A>(
  * Run a Wish with a timeout. If it doesn't complete in time, it's cancelled.
  */
 export const timeout = <A>(wish: Wish<A>, ms: number): Wish<A> => {
-  return async (signal) => {
+  return async (ctx) => {
     return race(
       wish,
       flatMap(sleep(ms), () => fail(new Error(`Timeout after ${ms}ms`)))
-    )(signal);
+    )(ctx);
   };
 };
 
@@ -190,16 +190,16 @@ export const timeout = <A>(wish: Wish<A>, ms: number): Wish<A> => {
  * Retry a Wish up to n times on failure.
  */
 export const retry = <A>(wish: Wish<A>, times: number, delay = 0): Wish<A> => {
-  return async (signal) => {
+  return async (ctx) => {
     let lastError: Error | undefined;
 
     for (let i = 0; i <= times; i++) {
       try {
-        return await wish(signal);
+        return await wish(ctx);
       } catch (error) {
         lastError = error as Error;
         if (i < times && delay > 0) {
-          await sleep(delay)(signal);
+          await sleep(delay)(ctx);
         }
       }
     }
@@ -219,18 +219,18 @@ export const defer = <A>(): {
   let resolve!: (value: A) => void;
   let reject!: (error: Error) => void;
 
-  const wish: Wish<A> = (signal) =>
+  const wish: Wish<A> = (ctx) =>
     new Promise<A>((res, rej) => {
       resolve = res;
       reject = rej;
 
-      if (signal.aborted) {
-        rej(signal.reason ?? new AbortError());
+      if (ctx.signal.aborted) {
+        rej(ctx.signal.reason ?? new AbortError());
       }
 
-      signal.addEventListener(
+      ctx.signal.addEventListener(
         'abort',
-        () => rej(signal.reason ?? new AbortError()),
+        () => rej(ctx.signal.reason ?? new AbortError()),
         { once: true }
       );
     });
@@ -245,7 +245,7 @@ export const run = <A>(wish: Wish<A>, signal?: AbortSignal): Promise<A> => {
   const controller = new AbortController();
   const effectiveSignal = signal ?? controller.signal;
 
-  return wish(effectiveSignal);
+  return wish({ signal: effectiveSignal });
 };
 
 /**

@@ -11,9 +11,9 @@ import { Scope } from './Core.js';
  */
 export const forEach = <A>(
   iterable: AsyncIterable<A>,
-  fn: (value: A, signal: AbortSignal) => Promise<void>
+  fn: (value: A, ctx: { signal: AbortSignal }) => Promise<void>
 ): Wish<void> => {
-  return async (signal) => {
+  return async (ctx) => {
     const iterator = iterable[Symbol.asyncIterator]();
 
     const cleanup = async () => {
@@ -22,22 +22,22 @@ export const forEach = <A>(
       } catch {}
     };
 
-    if (signal.aborted) {
+    if (ctx.signal.aborted) {
       await cleanup();
-      throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+      throw ctx.signal.reason ?? new DOMException('Aborted', 'AbortError');
     }
 
-    signal.addEventListener('abort', cleanup, { once: true });
+    ctx.signal.addEventListener('abort', cleanup, { once: true });
 
     try {
       for await (const value of { [Symbol.asyncIterator]: () => iterator }) {
-        if (signal.aborted) {
-          throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+        if (ctx.signal.aborted) {
+          throw ctx.signal.reason ?? new DOMException('Aborted', 'AbortError');
         }
-        await fn(value, signal);
+        await fn(value, ctx);
       }
     } finally {
-      signal.removeEventListener('abort', cleanup);
+      ctx.signal.removeEventListener('abort', cleanup);
       await cleanup();
     }
   };
@@ -47,11 +47,11 @@ export const forEach = <A>(
  * Collect all items from an async iterable into an array.
  */
 export const toArray = <A>(iterable: AsyncIterable<A>): Wish<A[]> => {
-  return async (signal) => {
+  return async (ctx) => {
     const result: A[] = [];
     await forEach(iterable, async (value) => {
       result.push(value);
-    })(signal);
+    })(ctx);
     return result;
   };
 };
@@ -103,9 +103,9 @@ export async function* take<A>(
 export const merge = <A>(
   ...iterables: AsyncIterable<A>[]
 ): Wish<AsyncIterable<A>> => {
-  return async (signal) => {
+  return async (ctx) => {
     return (async function* () {
-      const scope = new Scope(signal);
+      const scope = new Scope(ctx.signal);
       const queue: A[] = [];
       const deferred: Array<{
         resolve: (value: IteratorResult<A>) => void;
@@ -137,10 +137,10 @@ export const merge = <A>(
 
       // Start consuming all iterables
       for (const iterable of iterables) {
-        scope.fork(async (sig) => {
+        scope.fork(async (ctx) => {
           try {
             for await (const value of iterable) {
-              if (sig.aborted) break;
+              if (ctx.signal.aborted) break;
               enqueue(value);
             }
           } finally {
@@ -177,9 +177,9 @@ export const merge = <A>(
 export const mapConcurrent = <A, B>(
   iterable: AsyncIterable<A>,
   concurrency: number,
-  fn: (value: A, signal: AbortSignal) => Promise<B>
+  fn: (value: A, ctx: { signal: AbortSignal }) => Promise<B>
 ): Wish<B[]> => {
-  return async (signal) => {
+  return async (ctx) => {
     const results: B[] = [];
     const inFlight = new Set<Promise<void>>();
     const iterator = iterable[Symbol.asyncIterator]();
@@ -190,12 +190,12 @@ export const mapConcurrent = <A, B>(
       } catch {}
     };
 
-    signal.addEventListener('abort', cleanup, { once: true });
+    ctx.signal.addEventListener('abort', cleanup, { once: true });
 
     try {
       while (true) {
-        if (signal.aborted) {
-          throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+        if (ctx.signal.aborted) {
+          throw ctx.signal.reason ?? new DOMException('Aborted', 'AbortError');
         }
 
         // Wait if at concurrency limit
@@ -206,7 +206,7 @@ export const mapConcurrent = <A, B>(
         const { value, done } = await iterator.next();
         if (done) break;
 
-        const task = fn(value, signal).then(
+        const task = fn(value, ctx).then(
           (result) => {
             results.push(result);
           },
@@ -225,7 +225,7 @@ export const mapConcurrent = <A, B>(
 
       return results;
     } finally {
-      signal.removeEventListener('abort', cleanup);
+      ctx.signal.removeEventListener('abort', cleanup);
       await cleanup();
       await Promise.allSettled(inFlight);
     }

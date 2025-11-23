@@ -22,12 +22,12 @@ console.log(`   Three 100ms sleeps completed in ${elapsed}ms (ran in parallel!) 
 console.log('3️⃣  Racing operations:');
 const winner = await Wish.run(
   Wish.race(
-    async (signal) => {
-      await Wish.sleep(50)(signal);
+    async (ctx) => {
+      await Wish.sleep(50)(ctx);
       return 'Fast task';
     },
-    async (signal) => {
-      await Wish.sleep(200)(signal);
+    async (ctx) => {
+      await Wish.sleep(200)(ctx);
       return 'Slow task';
     }
   )
@@ -41,29 +41,29 @@ const result = await Wish.run(
     console.log('   Starting scope...');
 
     // Fork multiple concurrent tasks
-    const fiber1 = scope.fork(async (signal) => {
-      await Wish.sleep(50)(signal);
+    const fiber1 = scope.fork(async (ctx) => {
+      await Wish.sleep(50)(ctx);
       console.log('   Task 1 completed');
       return 1;
     });
 
-    const fiber2 = scope.fork(async (signal) => {
-      await Wish.sleep(75)(signal);
+    const fiber2 = scope.fork(async (ctx) => {
+      await Wish.sleep(75)(ctx);
       console.log('   Task 2 completed');
       return 2;
     });
 
-    const fiber3 = scope.fork(async (signal) => {
-      await Wish.sleep(100)(signal);
+    const fiber3 = scope.fork(async (ctx) => {
+      await Wish.sleep(100)(ctx);
       console.log('   Task 3 completed');
       return 3;
     });
 
-    // Wait for all to complete
+    // Wait for all to complete (fibers are promise-like!)
     const results = await Promise.all([
-      fiber1.await(),
-      fiber2.await(),
-      fiber3.await(),
+      fiber1,
+      fiber2,
+      fiber3,
     ]);
 
     console.log('   Scope closing (automatic cleanup)...');
@@ -78,9 +78,9 @@ console.log('5️⃣  Cancellation:');
 const ac = new AbortController();
 
 const cancelDemo = Wish.run(
-  async (signal) => {
+  async (ctx) => {
     console.log('   Starting cancellable task...');
-    await Wish.sleep(1000)(signal);
+    await Wish.sleep(1000)(ctx);
     console.log('   This will never print!');
   },
   ac.signal
@@ -99,9 +99,9 @@ await cancelDemo.catch(() => {
 // Example 6: Real-world pattern - fetch with timeout and retry
 console.log('6️⃣  Real-world pattern (simulated):');
 
-const fetchData = async (signal: AbortSignal, url: string) => {
+const fetchData = async (ctx: { signal: AbortSignal }, url: string) => {
   // Simulate API call
-  await Wish.sleep(Math.random() * 200)(signal);
+  await Wish.sleep(Math.random() * 200)(ctx);
 
   // Simulate occasional failure
   if (Math.random() < 0.3) {
@@ -111,14 +111,14 @@ const fetchData = async (signal: AbortSignal, url: string) => {
   return { data: `Data from ${url}` };
 };
 
-const fetchWithTimeout = async (signal: AbortSignal) => {
+const fetchWithTimeout = async (ctx: { signal: AbortSignal }) => {
   return Wish.race(
-    async (sig) => fetchData(sig, '/api/data'),
-    async (sig) => {
-      await Wish.sleep(500)(sig);
+    async (ctx2) => fetchData(ctx2, '/api/data'),
+    async (ctx2) => {
+      await Wish.sleep(500)(ctx2);
       throw new Error('Timeout after 500ms');
     }
-  )(signal);
+  )(ctx);
 };
 
 try {

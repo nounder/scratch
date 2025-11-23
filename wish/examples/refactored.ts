@@ -9,41 +9,41 @@ import { Wish, Stream } from '../src/index.js';
 import type { WishType } from '../src/index.js';
 
 // Example async generators (same as original)
-async function* streamA({ signal }: { signal?: AbortSignal } = {}) {
+async function* streamA(ctx: { signal?: AbortSignal } = { signal: undefined }) {
   yield 'A: start';
-  await Wish.sleep(50)(signal!);
+  await Wish.sleep(50)({ signal: ctx.signal! });
   yield 'A: chunk 1';
-  await Wish.sleep(80)(signal!);
+  await Wish.sleep(80)({ signal: ctx.signal! });
   yield 'A: chunk 2';
 }
 
-async function* streamB({ signal }: { signal?: AbortSignal } = {}) {
+async function* streamB(ctx: { signal?: AbortSignal } = { signal: undefined }) {
   yield 'B: boot';
-  await Wish.sleep(30)(signal!);
+  await Wish.sleep(30)({ signal: ctx.signal! });
   yield 'B: piece 1';
-  await Wish.sleep(120)(signal!);
+  await Wish.sleep(120)({ signal: ctx.signal! });
   yield 'B: piece 2';
 }
 
-function stream(opts: { signal?: AbortSignal }) {
+function stream(ctx: { signal?: AbortSignal }) {
   return {
-    a: streamA(opts),
-    b: streamB(opts),
+    a: streamA(ctx),
+    b: streamB(ctx),
   };
 }
 
 // Example per-item work (same as original)
 const doSomethingA = (v: string): WishType<void> => {
-  return async (signal) => {
+  return async (ctx) => {
     console.log(v);
-    await Wish.sleep(20)(signal);
+    await Wish.sleep(20)(ctx);
   };
 };
 
 const doSomethingB = (v: string): WishType<void> => {
-  return async (signal) => {
+  return async (ctx) => {
     console.log(v);
-    await Wish.sleep(25)(signal);
+    await Wish.sleep(25)(ctx);
   };
 };
 
@@ -55,21 +55,21 @@ const iterateBothAndContinue = Wish.scoped(async (scope) => {
 
   // Fork both stream processors concurrently
   const fiberA = scope.fork(
-    Stream.forEach(a, async (v, signal) => {
+    Stream.forEach(a, async (v, ctx) => {
       derived.aCount++;
-      await doSomethingA(v)(signal);
+      await doSomethingA(v)(ctx);
     })
   );
 
   const fiberB = scope.fork(
-    Stream.forEach(b, async (v, signal) => {
+    Stream.forEach(b, async (v, ctx) => {
       derived.bLast = v;
-      await doSomethingB(v)(signal);
+      await doSomethingB(v)(ctx);
     })
   );
 
-  // Wait for both to complete
-  await Promise.allSettled([fiberA.await(), fiberB.await()]);
+  // Wait for both to complete (fibers are promise-like!)
+  await Promise.allSettled([fiberA, fiberB]);
 
   // Scope automatically cleans up on exit
   return derived;

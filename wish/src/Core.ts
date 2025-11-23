@@ -6,9 +6,9 @@
 
 /**
  * A Wish represents a cancellable async computation that produces a value of type A.
- * It's a function that accepts an AbortSignal and returns a Promise.
+ * It's a function that accepts a context with an AbortSignal and returns a Promise.
  */
-export type Wish<A> = (signal: AbortSignal) => Promise<A>;
+export type Wish<A> = (ctx: { signal: AbortSignal }) => Promise<A>;
 
 /**
  * A Fiber represents a running computation that can be awaited or interrupted.
@@ -31,7 +31,7 @@ export class Fiber<A> {
       }
     }
 
-    this.promise = wish(this.abortController.signal);
+    this.promise = wish({ signal: this.abortController.signal });
   }
 
   /**
