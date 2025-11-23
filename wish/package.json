@@ -29,7 +29,8 @@
     "example:basic": "tsx examples/basic.ts",
     "example:refactored": "tsx examples/refactored.ts",
     "example:quick-start": "tsx examples/quick-start.ts",
-    "example:advanced": "tsx examples/advanced.ts"
+    "example:advanced": "tsx examples/advanced.ts",
+    "example:fiber": "tsx examples/fiber-demo.ts"
   },
   "keywords": [
     "async",

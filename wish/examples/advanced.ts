@@ -4,18 +4,9 @@
  * Demonstrates complex real-world scenarios and patterns.
  */
 
-import {
-  sleep,
-  scoped,
-  run,
-  retry,
-  timeout,
-  defer,
-  acquire,
-  Wish,
-  Scope,
-} from '../src/index.js';
-import { forEach, mapConcurrent } from '../src/stream.js';
+import { Wish, Stream } from '../src/index.js';
+import type { WishType } from '../src/index.js';
+import { forEach, mapConcurrent } from '../src/index.js';
 
 console.log('🚀 Advanced Wish Patterns\n');
 
@@ -44,8 +35,8 @@ class Database {
 const withDatabase = <A>(
   name: string,
   fn: (db: Database) => Wish<A>
-): Wish<A> => {
-  return acquire(
+): WishType<A> => {
+  return Wish.acquire(
     async () => {
       const db = new Database(name);
       await db.connect();
@@ -58,9 +49,9 @@ const withDatabase = <A>(
 };
 
 // Using the resource
-const result1 = await run(
+const result1 = await Wish.run(
   withDatabase('mydb', (db) =>
-    flatMap(
+    Wish.flatMap(
       async (signal) => db.query('SELECT * FROM users'),
       (result) => async () => {
         console.log(`📊 Query result: ${result}`);
@@ -83,12 +74,12 @@ async function* generateTasks() {
 
 const processTask = async (task: { id: number; work: number }, signal: AbortSignal) => {
   console.log(`⚙️  Processing task ${task.id}...`);
-  await sleep(task.work)(signal);
+  await Wish.sleep(task.work)(signal);
   return { taskId: task.id, result: task.id * 2 };
 };
 
-const results = await run(
-  mapConcurrent(generateTasks(), 3, processTask) // Max 3 concurrent
+const results = await Wish.run(
+  Stream.mapConcurrent(generateTasks(), 3, processTask) // Max 3 concurrent
 );
 
 console.log(`✓ Processed ${results.length} tasks with concurrency limit of 3\n`);
@@ -98,38 +89,38 @@ console.log('═══ Pattern 3: Timeout with Fallback ═══');
 
 const fetchWithFallback = async (signal: AbortSignal) => {
   const primary = async (sig: AbortSignal) => {
-    await sleep(2000)(sig); // Too slow
+    await Wish.sleep(2000)(sig); // Too slow
     return 'primary data';
   };
 
   const fallback = async (sig: AbortSignal) => {
-    await sleep(100)(sig);
+    await Wish.sleep(100)(sig);
     return 'cached data';
   };
 
   try {
-    return await timeout(primary, 500)(signal);
+    return await Wish.timeout(primary, 500)(signal);
   } catch {
     console.log('⚠️  Primary timed out, using fallback...');
     return await fallback(signal);
   }
 };
 
-const data = await run(fetchWithFallback);
+const data = await Wish.run(fetchWithFallback);
 console.log(`✓ Got: ${data}\n`);
 
 // Pattern 4: Coordinated Shutdown
 console.log('═══ Pattern 4: Coordinated Shutdown ═══');
 
-const gracefulShutdown = scoped(async (scope) => {
+const gracefulShutdown = Wish.scoped(async (scope) => {
   console.log('🚀 Starting services...');
 
   // Service 1: Message queue consumer
-  const service1 = scope.fork(async (signal) => {
+  const service1 = scope.Wish.fork(async (signal) => {
     console.log('  📬 Message queue started');
     try {
       while (!signal.aborted) {
-        await sleep(100)(signal);
+        await Wish.sleep(100)(signal);
         // Process messages...
       }
     } catch (e) {
@@ -139,11 +130,11 @@ const gracefulShutdown = scoped(async (scope) => {
   });
 
   // Service 2: HTTP server
-  const service2 = scope.fork(async (signal) => {
+  const service2 = scope.Wish.fork(async (signal) => {
     console.log('  🌐 HTTP server started');
     try {
       while (!signal.aborted) {
-        await sleep(150)(signal);
+        await Wish.sleep(150)(signal);
         // Handle requests...
       }
     } catch (e) {
@@ -153,13 +144,13 @@ const gracefulShutdown = scoped(async (scope) => {
   });
 
   // Simulate running for a bit, then shutdown
-  await sleep(300)(scope.abortSignal);
+  await Wish.sleep(300)(scope.abortSignal);
 
   console.log('🛑 Initiating graceful shutdown...');
   // Scope.close() will interrupt all fibers and wait for cleanup
 });
 
-await run(gracefulShutdown);
+await Wish.run(gracefulShutdown);
 console.log('✓ All services stopped gracefully\n');
 
 // Pattern 5: Retry with Exponential Backoff
@@ -169,7 +160,7 @@ let attempts = 0;
 const unreliableOperation = async (signal: AbortSignal) => {
   attempts++;
   console.log(`  🔄 Attempt ${attempts}...`);
-  await sleep(10)(signal);
+  await Wish.sleep(10)(signal);
 
   if (attempts < 3) {
     throw new Error('Temporary failure');
@@ -179,10 +170,10 @@ const unreliableOperation = async (signal: AbortSignal) => {
 };
 
 const retryWithBackoff = async <A>(
-  wish: Wish<A>,
+  wish: WishType<A>,
   maxAttempts: number
 ): Promise<A> => {
-  return run(async (signal) => {
+  return Wish.run(async (signal) => {
     let lastError: Error | undefined;
 
     for (let i = 0; i < maxAttempts; i++) {
@@ -193,7 +184,7 @@ const retryWithBackoff = async <A>(
         if (i < maxAttempts - 1) {
           const delay = Math.min(1000, 100 * Math.pow(2, i));
           console.log(`  ⏳ Backing off for ${delay}ms...`);
-          await sleep(delay)(signal);
+          await Wish.sleep(delay)(signal);
         }
       }
     }
@@ -211,7 +202,7 @@ console.log('═══ Pattern 6: Deferred / Manual Control ═══');
 const { wish: deferredWish, resolve: resolveWish } = defer<string>();
 
 // Start the wish
-const deferredTask = run(deferredWish);
+const deferredTask = Wish.run(deferredWish);
 
 // Resolve it later
 setTimeout(() => {
@@ -227,13 +218,13 @@ console.log('═══ Pattern 7: Pipeline with Error Recovery ═══');
 
 const stage1 = async (signal: AbortSignal) => {
   console.log('  ➡️  Stage 1');
-  await sleep(50)(signal);
+  await Wish.sleep(50)(signal);
   return 10;
 };
 
 const stage2 = async (input: number, signal: AbortSignal) => {
   console.log('  ➡️  Stage 2');
-  await sleep(50)(signal);
+  await Wish.sleep(50)(signal);
   if (Math.random() < 0.5) {
     throw new Error('Stage 2 failed');
   }
@@ -242,7 +233,7 @@ const stage2 = async (input: number, signal: AbortSignal) => {
 
 const stage3 = async (input: number, signal: AbortSignal) => {
   console.log('  ➡️  Stage 3');
-  await sleep(50)(signal);
+  await Wish.sleep(50)(signal);
   return input + 5;
 };
 
@@ -261,13 +252,13 @@ const pipeline = async (signal: AbortSignal) => {
   return v3;
 };
 
-const pipelineResult = await run(pipeline);
+const pipelineResult = await Wish.run(pipeline);
 console.log(`✓ Pipeline result: ${pipelineResult}\n`);
 
 console.log('✨ Advanced patterns complete! ✨');
 
 // Helper
-function flatMap<A, B>(wish: Wish<A>, fn: (a: A) => Wish<B>): Wish<B> {
+function flatMap<A, B>(wish: WishType<A>, fn: (a: A) => Wish<B>): WishType<B> {
   return async (signal) => {
     const result = await wish(signal);
     return fn(result)(signal);

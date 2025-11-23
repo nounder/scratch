@@ -4,7 +4,8 @@
  * Functions for creating, composing, and running async computations.
  */
 
-import { Wish, Fiber, Scope, AbortError } from './core.js';
+import type { Wish } from './Core.js';
+import { Fiber, Scope, AbortError } from './Core.js';
 
 /**
  * Create a Wish that succeeds with a value immediately.

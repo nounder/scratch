@@ -2,32 +2,32 @@
  * Quick Start - Get up and running with Wish in 5 minutes
  */
 
-import { sleep, scoped, run, all, race } from '../src/index.js';
+import { Wish } from '../src/index.js';
 
 console.log('🌟 Welcome to Wish! 🌟\n');
 
 // Example 1: Simple async operations
 console.log('1️⃣  Simple sleep:');
-await run(sleep(100));
+await Wish.run(Wish.sleep(100));
 console.log('   Slept for 100ms ✓\n');
 
 // Example 2: Running multiple operations concurrently
 console.log('2️⃣  Concurrent operations:');
 const start = Date.now();
-await run(all(sleep(100), sleep(100), sleep(100)));
+await Wish.run(Wish.all(Wish.sleep(100), Wish.sleep(100), Wish.sleep(100)));
 const elapsed = Date.now() - start;
 console.log(`   Three 100ms sleeps completed in ${elapsed}ms (ran in parallel!) ✓\n`);
 
 // Example 3: Racing operations
 console.log('3️⃣  Racing operations:');
-const winner = await run(
-  race(
+const winner = await Wish.run(
+  Wish.race(
     async (signal) => {
-      await sleep(50)(signal);
+      await Wish.sleep(50)(signal);
       return 'Fast task';
     },
     async (signal) => {
-      await sleep(200)(signal);
+      await Wish.sleep(200)(signal);
       return 'Slow task';
     }
   )
@@ -36,25 +36,25 @@ console.log(`   Winner: ${winner} ✓\n`);
 
 // Example 4: Structured concurrency with automatic cleanup
 console.log('4️⃣  Structured concurrency:');
-const result = await run(
-  scoped(async (scope) => {
+const result = await Wish.run(
+  Wish.scoped(async (scope) => {
     console.log('   Starting scope...');
 
     // Fork multiple concurrent tasks
     const fiber1 = scope.fork(async (signal) => {
-      await sleep(50)(signal);
+      await Wish.sleep(50)(signal);
       console.log('   Task 1 completed');
       return 1;
     });
 
     const fiber2 = scope.fork(async (signal) => {
-      await sleep(75)(signal);
+      await Wish.sleep(75)(signal);
       console.log('   Task 2 completed');
       return 2;
     });
 
     const fiber3 = scope.fork(async (signal) => {
-      await sleep(100)(signal);
+      await Wish.sleep(100)(signal);
       console.log('   Task 3 completed');
       return 3;
     });
@@ -77,10 +77,10 @@ console.log(`   Sum of results: ${result} ✓\n`);
 console.log('5️⃣  Cancellation:');
 const ac = new AbortController();
 
-const cancelDemo = run(
+const cancelDemo = Wish.run(
   async (signal) => {
     console.log('   Starting cancellable task...');
-    await sleep(1000)(signal);
+    await Wish.sleep(1000)(signal);
     console.log('   This will never print!');
   },
   ac.signal
@@ -101,7 +101,7 @@ console.log('6️⃣  Real-world pattern (simulated):');
 
 const fetchData = async (signal: AbortSignal, url: string) => {
   // Simulate API call
-  await sleep(Math.random() * 200)(signal);
+  await Wish.sleep(Math.random() * 200)(signal);
 
   // Simulate occasional failure
   if (Math.random() < 0.3) {
@@ -112,17 +112,17 @@ const fetchData = async (signal: AbortSignal, url: string) => {
 };
 
 const fetchWithTimeout = async (signal: AbortSignal) => {
-  return race(
+  return Wish.race(
     async (sig) => fetchData(sig, '/api/data'),
     async (sig) => {
-      await sleep(500)(sig);
+      await Wish.sleep(500)(sig);
       throw new Error('Timeout after 500ms');
     }
   )(signal);
 };
 
 try {
-  const data = await run(fetchWithTimeout);
+  const data = await Wish.run(fetchWithTimeout);
   console.log(`   Fetched: ${data.data} ✓`);
 } catch (error) {
   console.log(`   Error: ${(error as Error).message}`);

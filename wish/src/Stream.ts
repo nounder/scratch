@@ -2,7 +2,8 @@
  * Stream utilities for working with async iterables.
  */
 
-import { Wish, Scope } from './core.js';
+import type { Wish } from './Core.js';
+import { Scope } from './Core.js';
 
 /**
  * Consume an async iterable, calling a function for each item.

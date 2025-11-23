@@ -54,6 +54,33 @@ export class Fiber<A> {
   get raw(): Promise<A> {
     return this.promise;
   }
+
+  /**
+   * Attach callbacks for the resolution and/or rejection of the computation.
+   * Makes Fiber promise-like.
+   */
+  then<TResult1 = A, TResult2 = never>(
+    onfulfilled?: ((value: A) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+  ): Promise<TResult1 | TResult2> {
+    return this.promise.then(onfulfilled, onrejected);
+  }
+
+  /**
+   * Attach a callback for only the rejection of the computation.
+   */
+  catch<TResult = never>(
+    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null
+  ): Promise<A | TResult> {
+    return this.promise.catch(onrejected);
+  }
+
+  /**
+   * Attach a callback that is invoked when the computation settles.
+   */
+  finally(onfinally?: (() => void) | null): Promise<A> {
+    return this.promise.finally(onfinally);
+  }
 }
 
 /**

@@ -4,10 +4,10 @@
  * The async library we wish we had - playful, powerful, and practical.
  */
 
-export * from './core.js';
-export * from './wish.js';
-export * as Stream from './stream.js';
+// Export core types and classes
+export type { Wish as WishType } from './Core.js';
+export { Fiber, Scope, AbortError } from './Core.js';
 
-// Re-export for convenience
-export type { Wish } from './core.js';
-export { Fiber, Scope, AbortError } from './core.js';
+// Export namespaces
+export * as Wish from './Wish.js';
+export * as Stream from './Stream.js';
