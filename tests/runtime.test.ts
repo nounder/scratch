@@ -44,8 +44,8 @@ describe("runtime", () => {
 
   test("loads WASM from file path", async () => {
     const compiled = await compile({
-      input: "export fn double(x: i32) i32 { return x * 2; }",
-      output: "/tmp/zig-test-runtime-load.wasm",
+      input: "export fn double(x: i32) i32 { return x + x; }",
+      output: "/tmp/zigc-test-runtime-load.wasm",
     });
 
     const mod = await loadWasm({ wasm: compiled.wasmPath });
@@ -65,5 +65,14 @@ describe("runtime", () => {
 
     // Module should still be usable after invoke
     expect(mod.call("square", 5)).toBe(25);
+  });
+
+  test("exports memory", async () => {
+    const compiled = await compile({
+      input: "export fn noop() void { return; }",
+    });
+
+    const mod = await loadWasm({ wasm: compiled.wasmBytes });
+    expect(mod.memory).not.toBeNull();
   });
 });

@@ -1,6 +1,8 @@
 /**
  * zig-wasm-compiler: Compile Zig source code to WebAssembly and run it with Bun.
  *
+ * Uses a custom compiler (zigc) written in Zig that directly emits WASM binary.
+ *
  * Usage:
  *   import { compile, loadWasm, compileAndRun } from "./index";
  *
@@ -19,7 +21,7 @@
  */
 
 export { compile } from "./compiler";
-export type { CompileOptions, CompileResult, OptLevel, WasmTarget } from "./compiler";
+export type { CompileOptions, CompileResult } from "./compiler";
 
 export { loadWasm, createDefaultImports } from "./runtime";
 export type { RunOptions, WasmModule, WasmImports } from "./runtime";

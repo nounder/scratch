@@ -2,7 +2,7 @@
  * Pipeline: Compile Zig source and run the resulting WASM in one step.
  */
 
-import { compile, type CompileOptions } from "./compiler";
+import { compile } from "./compiler";
 import { loadWasm, type WasmImports, type WasmModule } from "./runtime";
 
 export interface PipelineOptions {
@@ -10,8 +10,8 @@ export interface PipelineOptions {
   source: string;
   /** WASM imports to provide */
   imports?: WasmImports;
-  /** Compile options overrides */
-  compileOptions?: Partial<Omit<CompileOptions, "input">>;
+  /** Output path for the .wasm file (optional) */
+  output?: string;
 }
 
 /**
@@ -20,12 +20,10 @@ export interface PipelineOptions {
 export async function compileAndRun(
   options: PipelineOptions
 ): Promise<WasmModule> {
-  const compileOpts: CompileOptions = {
+  const result = await compile({
     input: options.source,
-    ...options.compileOptions,
-  };
-
-  const result = await compile(compileOpts);
+    output: options.output,
+  });
 
   return loadWasm({
     wasm: result.wasmBytes,

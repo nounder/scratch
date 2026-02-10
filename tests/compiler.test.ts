@@ -26,34 +26,28 @@ describe("compiler", () => {
     expect(result.wasmPath).toContain("math.wasm");
   });
 
-  test("respects optimization level", async () => {
-    const debug = await compile({
-      input: "export fn noop() void {}",
-      optimize: "Debug",
-    });
-
-    const small = await compile({
-      input: "export fn noop() void {}",
-      optimize: "ReleaseSmall",
-    });
-
-    // ReleaseSmall should produce smaller output than Debug
-    expect(small.size).toBeLessThanOrEqual(debug.size);
-  });
-
   test("throws on invalid Zig source", async () => {
     expect(
       compile({ input: "this is not valid zig code !!!" })
-    ).rejects.toThrow("Zig compilation failed");
+    ).rejects.toThrow("zigc compilation failed");
   });
 
   test("compiles with custom output path", async () => {
     const result = await compile({
       input: "export fn id(x: i32) i32 { return x; }",
-      output: "/tmp/zig-test-custom-output.wasm",
+      output: "/tmp/zigc-test-custom-output.wasm",
     });
 
-    expect(result.wasmPath).toBe("/tmp/zig-test-custom-output.wasm");
+    expect(result.wasmPath).toBe("/tmp/zigc-test-custom-output.wasm");
     expect(result.size).toBeGreaterThan(0);
+  });
+
+  test("produces compact WASM output", async () => {
+    const result = await compile({
+      input: "export fn add(a: i32, b: i32) i32 { return a + b; }",
+    });
+
+    // Our custom compiler produces very compact WASM (< 100 bytes for simple functions)
+    expect(result.size).toBeLessThan(100);
   });
 });

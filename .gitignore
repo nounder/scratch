@@ -2,3 +2,5 @@ node_modules/
 dist/
 *.wasm
 bun.lockb
+compiler/zig-out/
+compiler/.zig-cache/

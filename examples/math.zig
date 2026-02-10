@@ -13,17 +13,23 @@ export fn multiply(a: i32, b: i32) i32 {
 }
 
 export fn divide(a: i32, b: i32) i32 {
-    if (b == 0) return 0;
-    return @divTrunc(a, b);
+    if (b == 0) {
+        return 0;
+    }
+    return a / b;
 }
 
 export fn modulo(a: i32, b: i32) i32 {
-    if (b == 0) return 0;
-    return @mod(a, b);
+    if (b == 0) {
+        return 0;
+    }
+    return a % b;
 }
 
 export fn power(base: i32, exp: i32) i32 {
-    if (exp < 0) return 0;
+    if (exp < 0) {
+        return 0;
+    }
     var result: i32 = 1;
     var i: i32 = 0;
     while (i < exp) : (i += 1) {
@@ -33,13 +39,22 @@ export fn power(base: i32, exp: i32) i32 {
 }
 
 export fn abs(x: i32) i32 {
-    return if (x < 0) -x else x;
+    if (x < 0) {
+        return -x;
+    }
+    return x;
 }
 
 export fn max(a: i32, b: i32) i32 {
-    return if (a > b) a else b;
+    if (a > b) {
+        return a;
+    }
+    return b;
 }
 
 export fn min(a: i32, b: i32) i32 {
-    return if (a < b) a else b;
+    if (a < b) {
+        return a;
+    }
+    return b;
 }

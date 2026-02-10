@@ -3,24 +3,22 @@
  * CLI for zig-wasm-compiler.
  *
  * Usage:
- *   bun run src/cli.ts compile <file.zig> [-o output.wasm] [--target wasm32-freestanding] [--optimize ReleaseSmall]
+ *   bun run src/cli.ts compile <file.zig> [-o output.wasm]
  *   bun run src/cli.ts run <file.wasm> [--invoke fn_name] [--args 1,2,3]
  *   bun run src/cli.ts build <file.zig> [--invoke fn_name] [--args 1,2,3]
  */
 
-import { compile, type OptLevel, type WasmTarget } from "./compiler";
+import { compile } from "./compiler";
 import { loadWasm } from "./runtime";
 
 const [command, ...rest] = process.argv.slice(2);
 
 function usage(): never {
-  console.log(`zig-wasm-compiler - Compile Zig to WASM and run it with Bun
+  console.log(`zigc - Compile Zig to WASM and run it with Bun
 
 Commands:
   compile <file.zig>   Compile a .zig file to .wasm
     -o <path>          Output path (default: <input>.wasm)
-    --target <target>  WASM target (default: wasm32-freestanding)
-    --optimize <level> Optimization: Debug|ReleaseSafe|ReleaseFast|ReleaseSmall
 
   run <file.wasm>      Load and run a .wasm file
     --invoke <fn>      Function to call
@@ -52,15 +50,10 @@ async function main() {
         usage();
       }
       const output = getFlag(rest, "-o");
-      const target = (getFlag(rest, "--target") || "wasm32-freestanding") as WasmTarget;
-      const optimize = (getFlag(rest, "--optimize") || "ReleaseSmall") as OptLevel;
 
-      console.log(`Compiling ${file} -> WASM (${target}, ${optimize})...`);
-      const result = await compile({ input: file, output, target, optimize });
+      console.log(`Compiling ${file} -> WASM...`);
+      const result = await compile({ input: file, output });
       console.log(`Output: ${result.wasmPath} (${result.size} bytes)`);
-      if (result.warnings.length > 0) {
-        console.log("Warnings:", result.warnings.join("\n"));
-      }
       break;
     }
 
@@ -91,14 +84,12 @@ async function main() {
         usage();
       }
       const output = getFlag(rest, "-o");
-      const target = (getFlag(rest, "--target") || "wasm32-freestanding") as WasmTarget;
-      const optimize = (getFlag(rest, "--optimize") || "ReleaseSmall") as OptLevel;
       const invoke = getFlag(rest, "--invoke");
       const argsStr = getFlag(rest, "--args");
       const args = argsStr ? argsStr.split(",").map(Number) : [];
 
       console.log(`Compiling ${file} -> WASM...`);
-      const result = await compile({ input: file, output, target, optimize });
+      const result = await compile({ input: file, output });
       console.log(`Compiled: ${result.wasmPath} (${result.size} bytes)`);
 
       const mod = await loadWasm({ wasm: result.wasmBytes });
