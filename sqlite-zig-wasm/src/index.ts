@@ -73,99 +73,11 @@ async function loadWasm(): Promise<WebAssembly.Module> {
 }
 
 function instantiate(mod: WebAssembly.Module): SQLiteExports {
-  // Late-bound reference so WASI callbacks can access memory before instance is assigned
-  let memoryBuffer = (): ArrayBuffer => instance.exports.memory.buffer;
-
-  // Meaningful WASI implementations
-  const wasiImpl: Record<string, (...args: any[]) => any> = {
-    proc_exit: (code: number) => {
-      throw new Error(`SQLite WASM called proc_exit(${code})`);
-    },
-    environ_sizes_get: (countPtr: number, bufSizePtr: number) => {
-      const view = new DataView(memoryBuffer());
-      view.setUint32(countPtr, 0, true);
-      view.setUint32(bufSizePtr, 0, true);
-      return 0;
-    },
-    environ_get: () => 0,
-    clock_time_get: (_id: number, _precision: bigint, outPtr: number) => {
-      const view = new DataView(memoryBuffer());
-      view.setBigUint64(outPtr, BigInt(Date.now()) * 1000000n, true);
-      return 0;
-    },
-    random_get: (bufPtr: number, bufLen: number) => {
-      const buf = new Uint8Array(memoryBuffer(), bufPtr, bufLen);
-      crypto.getRandomValues(buf);
-      return 0;
-    },
-    args_sizes_get: (argcPtr: number, argvBufSizePtr: number) => {
-      const view = new DataView(memoryBuffer());
-      view.setUint32(argcPtr, 0, true);
-      view.setUint32(argvBufSizePtr, 0, true);
-      return 0;
-    },
-    args_get: () => 0,
-    fd_write: (fd: number, iovsPtr: number, iovsLen: number, nwrittenPtr: number) => {
-      // Minimal fd_write for stderr/stdout — discard output
-      const view = new DataView(memoryBuffer());
-      let written = 0;
-      for (let i = 0; i < iovsLen; i++) {
-        const len = view.getUint32(iovsPtr + i * 8 + 4, true);
-        written += len;
-      }
-      view.setUint32(nwrittenPtr, written, true);
-      return 0;
-    },
-  };
-
-  // WASI errno constants
-  const ERRNO_BADF = 8;   // Bad file descriptor
-  const ERRNO_NOSYS = 52; // Function not supported
-
-  // Specific stubs that need particular errno values
-  const wasiStubs: Record<string, (...args: any[]) => any> = {
-    fd_prestat_get: () => ERRNO_BADF,         // No preopened directories
-    fd_prestat_dir_name: () => ERRNO_BADF,
-    fd_fdstat_get: () => ERRNO_BADF,
-    fd_fdstat_set_flags: () => ERRNO_NOSYS,
-    fd_close: () => ERRNO_BADF,
-    fd_read: () => ERRNO_BADF,
-    fd_seek: () => ERRNO_BADF,
-    path_open: () => ERRNO_BADF,
-    path_filestat_get: () => ERRNO_BADF,
-    path_unlink_file: () => ERRNO_NOSYS,
-    path_create_directory: () => ERRNO_NOSYS,
-    path_remove_directory: () => ERRNO_NOSYS,
-    path_rename: () => ERRNO_NOSYS,
-    path_readlink: () => ERRNO_NOSYS,
-    path_symlink: () => ERRNO_NOSYS,
-    poll_oneoff: () => ERRNO_NOSYS,
-    sock_accept: () => ERRNO_NOSYS,
-    sock_recv: () => ERRNO_NOSYS,
-    sock_send: () => ERRNO_NOSYS,
-    sock_shutdown: () => ERRNO_NOSYS,
-    sched_yield: () => 0,
-  };
-
-  // Merge: specific impls override stubs
-  const wasiAll = { ...wasiStubs, ...wasiImpl };
-
-  // Proxy auto-stubs any still-missing WASI imports
-  const wasi = new Proxy(wasiAll, {
-    get(target, prop) {
-      if (prop in target) return target[prop as string];
-      return () => ERRNO_NOSYS;
-    },
-  });
-
-  const instance = new WebAssembly.Instance(mod, {
-    wasi_snapshot_preview1: wasi,
-  }) as WebAssembly.Instance & { exports: SQLiteExports };
-
-  // Initialize the WASI reactor
-  if (instance.exports._initialize) {
-    instance.exports._initialize();
-  }
+  // Freestanding WASM — no WASI imports needed.
+  const instance = new WebAssembly.Instance(
+    mod,
+    {}
+  ) as WebAssembly.Instance & { exports: SQLiteExports };
 
   return instance.exports;
 }

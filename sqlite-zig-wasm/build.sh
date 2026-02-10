@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# SQLite WASM build script using Zig
-# Produces a minimal sqlite3.wasm binary (~600KB, vs 897KB from Emscripten)
+# SQLite WASM build script using Zig (wasm32-freestanding, no libc)
+# Produces a minimal sqlite3.wasm binary (~553KB, vs 897KB from Emscripten)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -16,6 +16,11 @@ mkdir -p dist
 
 # SQLite feature flags — strip unused features for minimum size
 SQLITE_FLAGS=(
+    # Use custom OS layer (no-op VFS registered in wasm_stubs.c)
+    -DSQLITE_OS_OTHER=1
+    -DSQLITE_BYTEORDER=1234
+    -DSQLITE_OMIT_AUTOINIT
+
     # Disable unused subsystems
     -DSQLITE_OMIT_LOAD_EXTENSION
     -DSQLITE_OMIT_DEPRECATED
@@ -37,6 +42,13 @@ SQLITE_FLAGS=(
     -DSQLITE_OMIT_COMPILEOPTION_DIAGS
     -DSQLITE_OMIT_LIKE_OPTIMIZATION
     -DSQLITE_OMIT_INTROSPECTION_PRAGMAS
+    -DSQLITE_OMIT_DATETIME_FUNCS
+    -DSQLITE_OMIT_BETWEEN_OPTIMIZATION
+    -DSQLITE_OMIT_OR_OPTIMIZATION
+    -DSQLITE_OMIT_CAST
+    -DSQLITE_OMIT_BLOB_LITERAL
+    -DSQLITE_OMIT_BUILTIN_TEST
+    -DSQLITE_OMIT_LOOKASIDE
 
     # Disable full-text search, R-tree, geo
     -DSQLITE_OMIT_FTS3
@@ -63,12 +75,16 @@ SQLITE_FLAGS=(
 
     # Disable stack protector (not meaningful in WASM sandbox)
     -fno-stack-protector
+
+    # Use custom stub headers instead of system libc
+    -nostdinc
+    -isystem src/include
 )
 
-echo "Building sqlite3.wasm..."
+echo "Building sqlite3.wasm (freestanding)..."
 $ZIG build-exe \
     src/exports.zig \
-    -target wasm32-wasi \
+    -target wasm32-freestanding \
     $OPTIMIZE \
     -fstrip \
     -fsingle-threaded \
@@ -77,12 +93,13 @@ $ZIG build-exe \
     --export-table \
     --initial-memory=33554432 \
     --global-base=6560 \
-    -mexec-model=reactor \
     --gc-sections \
-    -lc \
     -cflags "${SQLITE_FLAGS[@]}" -- \
-    -Ivendor vendor/sqlite3.c \
+    -Ivendor -Isrc vendor/sqlite3.c src/wasm_stubs.c \
     -femit-bin="$OUTPUT"
 
 SIZE=$(wc -c < "$OUTPUT")
+echo ""
 echo "Built: $OUTPUT ($SIZE bytes, $(( SIZE / 1024 ))KB)"
+echo "  Official sqlite3.wasm (Emscripten): 897KB"
+echo "  wa-sqlite:                          566KB"
