@@ -1,0 +1,16 @@
+{
+  "name": "zig-wasm-compiler",
+  "version": "1.0.0",
+  "description": "Compile Zig source code to WebAssembly and run it with Bun",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "bun run src/cli.ts build",
+    "test": "bun test",
+    "compile": "bun run src/cli.ts compile",
+    "run:wasm": "bun run src/cli.ts run"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
