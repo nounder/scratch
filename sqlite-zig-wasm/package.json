@@ -1,0 +1,14 @@
+{
+  "name": "sqlite-zig-wasm",
+  "version": "0.1.0",
+  "description": "Minimal SQLite compiled to WASM via Zig — smaller than Emscripten builds",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "./build.sh",
+    "test": "bun test"
+  }
+}
